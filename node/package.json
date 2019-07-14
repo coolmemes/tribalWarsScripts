@@ -1,0 +1,17 @@
+{
+  "name": "tw-scripts-node",
+  "version": "0.0.1",
+  "description": "Tribal Wars scripts in nodejs",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "FunnyPocketBook",
+  "license": "MIT",
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "jsdom": "^15.1.1",
+    "log4js": "^4.3.1",
+    "request": "^2.88.0"
+  }
+}
