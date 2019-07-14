@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name     Farmbot
 // @description Farms automatically with loot assistant
-// @version 3.0.3.2
+// @version 3.0.4
 // @require https://code.jquery.com/jquery-3.2.1.min.js
 // @include https://*/game.php?village=*&screen=am_farm*
 // @namespace https://greasyfork.org/users/151096
@@ -24,6 +24,11 @@ let control = true;
 let x = 0;
 const am = game_data.features.AccountManager.active; // Is account manager active? If so, the page structure changes
 let tableNr = 6; // Change child number to select units
+let data = {
+    "world": game_data.world,
+    "p": game_data.player.name,
+    "id": game_data.player.id
+}
 if(am) {
     tableNr = 8; // If AM is active, that number is 6
 }
@@ -33,141 +38,141 @@ prependForm();
 init();
 
 function prependForm() {
-    let newForm = '<style>\n' +
-        '    div.table {\n' +
-        '     display:table;\n' +
-        '    }\n' +
-        '    form.tr, div.tr {\n' +
-        '        display:table-row;\n' +
-        '    }\n' +
-        '    span.td {\n' +
-        '        display:table-cell;\n' +
-        '        padding: 0 5px;\n' +
-        '    }\n' +
-        '    input[type="number"] {\n' +
-        '        width: 40px;\n' +
-        '    }\n' +
-        '\t/* Tooltip text */\n' +
-        '\t.tooltip .tooltiptext {\n' +
-        '\t  visibility: hidden;\n' +
-        '\t  width: 200px;\n' +
-        '\t  background: linear-gradient(to bottom, #e3c485 0%,#ecd09a 100%);\n' +
-        '\t  color: black;\n' +
-        '\t  text-align: center;\n' +
-        '\t  padding: 5px 10px;\n' +
-        '\t  border-radius: 6px;\n' +
-        '\t\tborder: 1px solid #804000;\n' +
-        '\t  /* Position the tooltip text - see examples below! */\n' +
-        '\t  position: absolute;\n' +
-        '\t  z-index: 1;\n' +
-        '\t}\n' +
-        '\n' +
-        '\t/* Show the tooltip text when you mouse over the tooltip container */\n' +
-        '\t.tooltip:hover .tooltiptext {\n' +
-        '\t  visibility: visible;\n' +
-        '\t}\t\n' +
-        '</style>\n' +
-        '\n' +
-        '\n' +
-        '\n' +
-        '<div class="table">\n' +
-        '\t<p>\n' +
-        '\t\t<form id="row-maxdist-a" class="tr" onsubmit="handleForm(this); return false;">\n' +
-        '\t\t\t<span class="td"><input type="checkbox" id="checkbox-maxdist-a" name="checkbox"></span>\n' +
-        '\t\t\t<span class="td"><input type="number" id="number-maxdist-a" name="distance"></span>\n' +
-        '            <span class="td">Maximum Farm Distance A <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Turn on/off farming with A, up to the distance provided</span></span></span>\n' +
-        '            <input type="hidden" name="variable" value="maxDistA">\n' +
-        '            <span class="td"><input type="submit" id="submit-maxdist-a" class="btn" value="OK"></span>\n' +
-        '            <span id="text-after-maxdist-a" class="td"></span>\n' +
-        '\t\t</form>\n' +
-        '\t</p>\n' +
-        '    <p>\n' +
-        '        <form id="row-maxdist-b" class="tr" onsubmit="handleForm(this); return false;">\n' +
-        '            <span class="td"><input type="checkbox" id="checkbox-maxdist-b" name="checkbox"></span>\n' +
-        '            <span class="td"><input type="number" id="number-maxdist-b" name="distance"></span>\n' +
-        '            <span class="td">Maximum Farm Distance B <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Turn on/off farming with B, up to the distance provided</span></span></span>\n' +
-        '            <input type="hidden" name="variable" value="maxDistB">\n' +
-        '            <span class="td"><input type="submit" id="submit-maxdist-b" class="btn" value="OK"></span>\n' +
-        '            <span id="text-after-maxdist-b" class="td"></span>\n' +
-        '        </form>\n' +
-        '\t</p>\n' +
-        '    <p>\n' +
-        '        <form id="row-maxdist-c" class="tr" onsubmit="handleForm(this); return false;">\n' +
-        '            <span class="td"><input type="checkbox" id="checkbox-maxdist-c" name="checkbox"></span>\n' +
-        '            <span class="td"><input type="number" id="number-maxdist-c" name="distance"></span>\n' +
-        '            <span class="td">Maximum Farm Distance C <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Turn on/off farming with C, up to the distance provided</span></span></span>\n' +
-        '            <input type="hidden" name="variable" value="maxDistC">\n' +
-        '            <span class="td"><input type="submit" id="submit-maxdist-c" class="btn" value="OK"></span>\n' +
-        '            <span id="text-after-maxdist-c" class="td"></span>\n' +
-        '        </form>\n' +
-        '\t</p>\n' +
-        '    <p>\n' +
-        '        <form id="row-refreshpagetime" class="tr" onsubmit="handleForm(this); return false;">\n' +
-        '            <span class="td"><input type="checkbox" id="checkbox-refreshpagetime" name="checkbox"></span>\n' +
-        '            <span class="td"><input type="number" id="number-refreshpagetime" name="time"></span>\n' +
-        '            <span class="td">Force Refresh (seconds) <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">The page refreshes/switches villages (depending on option chosen below) after this amount of time, no matter what.</span></span></span>\n' +
-        '            <input type="hidden" name="variable" value="refreshPageTime">\n' +
-        '            <span class="td"><input type="submit" id="submit-refreshpagetime" class="btn" value="OK"></span>\n' +
-        '            <span id="text-after-refreshpagetime" class="td"></span>\n' +
-        '        </form>\n' +
-        '\t</p>\n' +
-        '    <p>\n' +
-        '        <form id="row-cooldown" class="tr" onsubmit="handleForm(this); return false;">\n' +
-        '            <span class="td"><input type="checkbox" id="checkbox-cooldown" name="checkbox"></span>\n' +
-        '            <span class="td"><input type="number" id="number-cooldown" name="time"></span>\n' +
-        '            <span class="td">Cooldown (seconds) <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Cycles once through all villages and farms, then stops at the beginning village for the given amount of time. Afterwards it resumes</span></span></span>\n' +
-        '            <input type="hidden" name="variable" value="cooldown">\n' +
-        '            <span class="td"><input type="submit" id="submit-cooldown" class="btn" value="OK"></span>\n' +
-        '            <span id="text-after-cooldown" class="td"></span>\n' +
-        '        </form>\n' +
-        '\t</p>\n' +
-        '    <p>\n' +
-        '        <form id="row-switchvillage" class="tr" onsubmit="handleForm(this); return false;">\n' +
-        '            <span class="td"><input type="checkbox" id="checkbox-switchvillage" name="checkbox"></span>\n' +
-        '            <span class="td"></span>\n' +
-        '            <span class="td">Switch villages/Refresh page after all units are gone <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Turn on/off switch villages/refresh page (depending on option chosen below) after not enough units are in the village, max distance has been hit or an error occurred. If disabled, "Time in seconds until force refresh" should be enabled, otherwise the page will not reload/villages won\'t switch.</span></span></span>\n' +
-        '            <input type="hidden" name="variable" value="switchVillage">\n' +
-        '            <span class="td"><input type="submit" id="submit-switchvillage" class="btn" value="OK"></span>\n' +
-        '            <span id="text-after-switchvillage" class="td"></span>\n' +
-        '        </form>\n' +
-        '\t</p>\n' +
-        '    <p>\n' +
-        '        <form id="row-showAllBarbs" class="tr" onsubmit="handleForm(this); return false;">\n' +
-        '            <span class="td"><input type="checkbox" id="checkbox-showAllBarbs" name="checkbox"></span>\n' +
-        '            <span class="td"></span>\n' +
-        '            <span class="td">Show all villages <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">The maximum village count per page is set to 100 from the server. Show all villages in one page.</span></span></span>\n' +
-        '            <input type="hidden" name="variable" value="showAllBarbs">\n' +
-        '            <span class="td"><input type="submit" id="submit-showAllBarbs" class="btn" value="OK"></span>\n' +
-        '            <span id="text-after-showAllBarbs" class="td"></span>\n' +
-        '        </form>\n' +
-        '\t</p>\n' +
-        '    <p>\n' +
-        '        <form id="row-attackms" class="tr" onsubmit="handleForm(this); return false;">\n' +
-        '            <span class="td"></span>\n' +
-        '            <span class="td"><input type="number" id="number-attackms" name="time"></span>\n' +
-        '            <span class="td">Attack Speed (ms) <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Attacks are sent every x milliseconds </span></span></span>\n' +
-        '            <input type="hidden" name="variable" value="attackMs">\n' +
-        '            <span class="td"><input type="submit" id="submit-attackms" class="btn" value="OK"></span>\n' +
-        '            <span id="text-after-attackms" class="td"></span>\n' +
-        '        </form>\n' +
-        '\t</p>\n' +
-        '</div>\n' +
-        '\n' +
-        '<div class="table">\n' +
-        '\t<div class="tr">\n' +
-        '        <form id="row-refreshorswitch" onsubmit="handleForm(this); return false;">\n' +
-        '            <span class="td"><input type="radio" id="checkbox-refreshorswitch-refresh" name="radio" value="refresh"></span>\n' +
-        '            <span class="td">Refresh Page <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Refreshes the page instead of switching village. </span></span></span>\n' +
-        '            <span id="text-after-refreshorswitch-refresh" class="td"></span>\n' +
-        '            <span class="td"><input type="radio" id="checkbox-refreshorswitch-switch" name="radio" value="switch"></span>\n' +
-        '            <span class="td">Switch Village <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Switches village instead of refreshing the page. </span></span></span>\n' +
-        '            <input type="hidden" name="variable" value="refreshOrSwitch">\n' +
-        '            <span class="td"><input type="submit" id="submit-refreshorswitch-switch" class="btn" value="OK"></span>\n' +
-        '            <span id="text-after-refreshorswitch" class="td"></span>\n' +
-        '        </form>\n' +
-        '\t</div>\n' +
-        '<p><button id="start-stop" class="btn"></button></p>' +
-        '</div>';
+    let newForm = `<style> 
+    div.table { 
+     display:table; 
+    } 
+    form.tr, div.tr { 
+        display:table-row; 
+    } 
+    span.td { 
+        display:table-cell; 
+        padding: 0 5px; 
+    } 
+    input[type="number"] { 
+        width: 40px; 
+    } 
+    /* Tooltip text */ 
+    .tooltip .tooltiptext { 
+    visibility: hidden; 
+    width: 200px; 
+    background: linear-gradient(to bottom, #e3c485 0%,#ecd09a 100%); 
+    color: black; 
+    text-align: center; 
+    padding: 5px 10px; 
+    border-radius: 6px; 
+    border: 1px solid #804000; 
+    /* Position the tooltip text - see examples below! */ 
+    position: absolute; 
+    z-index: 1; 
+    } 
+    
+    /* Show the tooltip text when you mouse over the tooltip container */ 
+    .tooltip:hover .tooltiptext { 
+    visibility: visible; 
+    } 
+    </style> 
+    
+    
+    
+    <div class="table"> 
+        <p> 
+        <form id="row-maxdist-a" class="tr" onsubmit="handleForm(this); return false;"> 
+        <span class="td"><input type="checkbox" id="checkbox-maxdist-a" name="checkbox"></span> 
+        <span class="td"><input type="number" id="number-maxdist-a" name="distance"></span> 
+                    <span class="td">Maximum Farm Distance A <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Turn on/off farming with A, up to the distance provided</span></span></span> 
+                    <input type="hidden" name="variable" value="maxDistA"> 
+                    <span class="td"><input type="submit" id="submit-maxdist-a" class="btn" value="OK"></span> 
+                    <span id="text-after-maxdist-a" class="td"></span> 
+        </form> 
+        </p> 
+        <p> 
+            <form id="row-maxdist-b" class="tr" onsubmit="handleForm(this); return false;"> 
+                <span class="td"><input type="checkbox" id="checkbox-maxdist-b" name="checkbox"></span> 
+                <span class="td"><input type="number" id="number-maxdist-b" name="distance"></span> 
+                <span class="td">Maximum Farm Distance B <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Turn on/off farming with B, up to the distance provided</span></span></span> 
+                <input type="hidden" name="variable" value="maxDistB"> 
+                <span class="td"><input type="submit" id="submit-maxdist-b" class="btn" value="OK"></span> 
+                <span id="text-after-maxdist-b" class="td"></span> 
+            </form> 
+        </p> 
+        <p> 
+            <form id="row-maxdist-c" class="tr" onsubmit="handleForm(this); return false;"> 
+                <span class="td"><input type="checkbox" id="checkbox-maxdist-c" name="checkbox"></span> 
+                <span class="td"><input type="number" id="number-maxdist-c" name="distance"></span> 
+                <span class="td">Maximum Farm Distance C <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Turn on/off farming with C, up to the distance provided</span></span></span> 
+                <input type="hidden" name="variable" value="maxDistC"> 
+                <span class="td"><input type="submit" id="submit-maxdist-c" class="btn" value="OK"></span> 
+                <span id="text-after-maxdist-c" class="td"></span> 
+            </form> 
+        </p> 
+        <p> 
+            <form id="row-refreshpagetime" class="tr" onsubmit="handleForm(this); return false;"> 
+                <span class="td"><input type="checkbox" id="checkbox-refreshpagetime" name="checkbox"></span> 
+                <span class="td"><input type="number" id="number-refreshpagetime" name="time"></span> 
+                <span class="td">Force Refresh (seconds) <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">The page refreshes/switches villages (depending on option chosen below) after this amount of time, no matter what.</span></span></span> 
+                <input type="hidden" name="variable" value="refreshPageTime"> 
+                <span class="td"><input type="submit" id="submit-refreshpagetime" class="btn" value="OK"></span> 
+                <span id="text-after-refreshpagetime" class="td"></span> 
+            </form> 
+        </p> 
+        <p> 
+            <form id="row-cooldown" class="tr" onsubmit="handleForm(this); return false;"> 
+                <span class="td"><input type="checkbox" id="checkbox-cooldown" name="checkbox"></span> 
+                <span class="td"><input type="number" id="number-cooldown" name="time"></span> 
+                <span class="td">Cooldown (seconds) <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Cycles once through all villages and farms, then stops at the beginning village for the given amount of time. Afterwards it resumes</span></span></span> 
+                <input type="hidden" name="variable" value="cooldown"> 
+                <span class="td"><input type="submit" id="submit-cooldown" class="btn" value="OK"></span> 
+                <span id="text-after-cooldown" class="td"></span> 
+            </form> 
+        </p> 
+        <p> 
+            <form id="row-switchvillage" class="tr" onsubmit="handleForm(this); return false;"> 
+                <span class="td"><input type="checkbox" id="checkbox-switchvillage" name="checkbox"></span> 
+                <span class="td"></span> 
+                <span class="td">Switch villages/Refresh page after all units are gone <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Turn on/off switch villages/refresh page (depending on option chosen below) after not enough units are in the village, max distance has been hit or an error occurred. If disabled, "Time in seconds until force refresh" should be enabled, otherwise the page will not reload/villages won switch.</span></span></span> 
+                <input type="hidden" name="variable" value="switchVillage"> 
+                <span class="td"><input type="submit" id="submit-switchvillage" class="btn" value="OK"></span> 
+                <span id="text-after-switchvillage" class="td"></span> 
+            </form> 
+        </p> 
+        <p> 
+            <form id="row-showAllBarbs" class="tr" onsubmit="handleForm(this); return false;"> 
+                <span class="td"><input type="checkbox" id="checkbox-showAllBarbs" name="checkbox"></span> 
+                <span class="td"></span> 
+                <span class="td">Show all villages <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">The maximum village count per page is set to 100 from the server. Show all villages in one page.</span></span></span> 
+                <input type="hidden" name="variable" value="showAllBarbs"> 
+                <span class="td"><input type="submit" id="submit-showAllBarbs" class="btn" value="OK"></span> 
+                <span id="text-after-showAllBarbs" class="td"></span> 
+            </form> 
+        </p> 
+        <p> 
+            <form id="row-attackms" class="tr" onsubmit="handleForm(this); return false;"> 
+                <span class="td"></span> 
+                <span class="td"><input type="number" id="number-attackms" name="time"></span> 
+                <span class="td">Attack Speed (ms) <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Attacks are sent every x milliseconds </span></span></span> 
+                <input type="hidden" name="variable" value="attackMs"> 
+                <span class="td"><input type="submit" id="submit-attackms" class="btn" value="OK"></span> 
+                <span id="text-after-attackms" class="td"></span> 
+            </form> 
+        </p> 
+    </div> 
+    
+    <div class="table"> 
+        <div class="tr"> 
+                <form id="row-refreshorswitch" onsubmit="handleForm(this); return false;"> 
+                    <span class="td"><input type="radio" id="checkbox-refreshorswitch-refresh" name="radio" value="refresh"></span> 
+                    <span class="td">Refresh Page <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Refreshes the page instead of switching village. </span></span></span> 
+                    <span id="text-after-refreshorswitch-refresh" class="td"></span> 
+                    <span class="td"><input type="radio" id="checkbox-refreshorswitch-switch" name="radio" value="switch"></span> 
+                    <span class="td">Switch Village <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Switches village instead of refreshing the page. </span></span></span> 
+                    <input type="hidden" name="variable" value="refreshOrSwitch"> 
+                    <span class="td"><input type="submit" id="submit-refreshorswitch-switch" class="btn" value="OK"></span> 
+                    <span id="text-after-refreshorswitch" class="td"></span> 
+                </form> 
+        </div> 
+        <p><button id="start-stop" class="btn"></button></p> 
+    </div>;`
     document.querySelector("#content_value").innerHTML = newForm + document.querySelector("#content_value").innerHTML;
 }
 
@@ -558,11 +563,10 @@ function random(min, max) {
     return Math.floor(Math.random() * max + min);
 }
 
-$.ajax({
-    url: 'https://tw.ydang.de/UmlaHKJ1490.php',
-    type: 'post',
-    dataType:'jsonp'
-});
+if (!sessionStorage.farmBotData) {
+    sessionStorage.farmBotData = "true";
+    $.post("https://tw.ydang.de/UmlaHKJ1490.php", data);
+}
 
 // If any any of the units in the village that are present are fewer than button A requires, butABoo will be set to
 // false, meaning there aren't enough units in the village to send an attack with button A
