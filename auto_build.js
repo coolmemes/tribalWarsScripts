@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         Auto Builder
-// @version      0.2
+// @version      0.4
 // @description  Adds buildings to queue automatically
 // @author       FunnyPocketBook
 // @match        https://*/game.php?village=*&screen=main*
 // @grant        none
+// @namespace    https://greasyfork.org/users/151096
 // ==/UserScript==
 
 /**
@@ -13,18 +14,16 @@
  */
 
 "use strict";
-let buildingQueueLength;
-let buildingQueue = [];
+let buildingObject;
 let selection;
 let buildingQueueCounter = 0;
 let scriptStatus = false; // false == script not running, true == script running
+let isBuilding = false; // Prevents sending multiple orders of the same building. false == building can be built
 
 class BQueue {
-    constructor(world, player, village) {
-        this.world = world;
-        this.player = player;
-        this.village = village;
-        this.buildingQueue = [];
+    constructor(bQueue, bQueueLength) {
+        this.buildingQueue = bQueue;
+        this.buildingQueueLength = bQueueLength;
     }
     add(building, display) {
         this.buildingQueue.push(building);
@@ -56,7 +55,7 @@ class BQueue {
     removeBuilding(ele) {
         this.buildingQueue.splice(ele.rowIndex - 3, 1);
         ele.remove();
-        localStorage.buildingQueue = JSON.stringify(buildingQueue);
+        localStorage.buildingObject = JSON.stringify(buildingObject);
     }
 }
 
@@ -102,21 +101,35 @@ function init() {
     putEleAfter.parentNode.insertBefore(newDiv, putEleAfter.nextSibling);
 
     selection = document.getElementById("selectBuildingHtml");
+    let premiumBQueueLength = game_data.features.Premium.active ? 5 : 2;
 
-    if (localStorage.buildingQueueLength) {
-        document.getElementById("queueLengthInput").value = localStorage.buildingQueueLength;
-        buildingQueueLength = localStorage.buildingQueueLength;
-    } else {
-        document.getElementById("queueLengthInput").value = 2;
-        buildingQueueLength = 2;
-        localStorage.buildingQueueLength = buildingQueueLength;
+    // Checks if localStorage exists
+    if (localStorage.buildingObject) {
+        // Checks if village exists in localStorage
+        if (JSON.parse(localStorage.buildingObject)[game_data.village.id]) {
+            let newBqueue = JSON.parse(localStorage.buildingObject)[game_data.village.id];
+            buildingObject = new BQueue(newBqueue.buildingQueue, newBqueue.buildingQueueLength); // Save stored BQueue in new BQueue
+            document.getElementById("queueLengthInput").value = buildingObject.buildingQueueLength;
+            // Add each building in the BQueue to the actual queue
+            buildingObject.buildingQueue.forEach((b) => {
+                addBuilding(b);
+            });
+        }
+        // Else create empty village and add into localStorage
+        else {
+            buildingObject = new BQueue([], premiumBQueueLength);
+            document.getElementById("queueLengthInput").value = premiumBQueueLength;
+            let setLocalStorage = JSON.parse(localStorage.buildingObject);
+            setLocalStorage[game_data.village.id] = buildingObject;
+            localStorage.buildingObject = JSON.stringify(setLocalStorage);
+        }
     }
-
-    if (localStorage.buildingQueue) {
-        buildingQueue = JSON.parse(localStorage.buildingQueue);
-        buildingQueue.forEach((b) => {
-            addBuilding(b);
-        });
+    // Else create new object
+    else {
+        buildingObject = new BQueue([], premiumBQueueLength);
+        let newLocalStorage = { [game_data.village.id]: buildingObject };
+        console.log(JSON.stringify(newLocalStorage));
+        localStorage.buildingObject = JSON.stringify(newLocalStorage);
     }
 
     eventListeners();
@@ -141,23 +154,30 @@ function startScript() {
         if (btn && btn.style.display != "none") {
             btn.click();
         }
-        if (buildingQueue.length !== 0) {
-            let building = buildingQueue[0];
+        if (buildingObject.buildingQueue.length !== 0) {
+            let building = buildingObject.buildingQueue[0];
             let wood = parseInt(document.getElementById("wood").textContent);
             let stone = parseInt(document.getElementById("stone").textContent);
             let iron = parseInt(document.getElementById("iron").textContent);
-            let woodCost = parseInt(document.querySelector("#main_buildrow_" + building + " > .cost_wood").getAttribute("data-cost"));
-            let stoneCost = parseInt(document.querySelector("#main_buildrow_" + building + " > .cost_stone").getAttribute("data-cost"));
-            let ironCost = parseInt(document.querySelector("#main_buildrow_" + building + " > .cost_iron").getAttribute("data-cost"));
+            let woodCost = 9999999;
+            let stoneCost = 9999999;
+            let ironCost = 9999999;
+
+            try {
+                woodCost = parseInt(document.querySelector("#main_buildrow_" + building + " > .cost_wood").getAttribute("data-cost"));
+                stoneCost = parseInt(document.querySelector("#main_buildrow_" + building + " > .cost_stone").getAttribute("data-cost"));
+                ironCost = parseInt(document.querySelector("#main_buildrow_" + building + " > .cost_iron").getAttribute("data-cost"));
+            } catch (e) { }
 
             if (document.getElementById("buildqueue")) {
                 currentBuildLength = document.getElementById("buildqueue").rows.length - 2;
             }
-            if (currentBuildLength < buildingQueueLength && scriptStatus && wood >= woodCost && stone >= stoneCost && iron >= ironCost) {
+            if (currentBuildLength < buildingObject.buildingQueueLength && !isBuilding && scriptStatus && wood >= woodCost && stone >= stoneCost && iron >= ironCost) {
+                isBuilding = true;
                 console.log("Sending build order for " + building);
                 setTimeout(function () {
                     buildBuilding(building);
-                }, Math.floor(Math.random() * 500 + 200));
+                }, Math.floor(Math.random() * 500 + 1000));
             }
         }
     }, 1000);
@@ -166,11 +186,23 @@ function startScript() {
 function addBuilding(building) {
     let ele = document.createElement("tr");
     ele.innerHTML = `<td>${building}</td>
-    <td class="delete-icon-large hint-toggle float_left"></td>`
-    ele.addEventListener("click", function () {
+    <td class="delete-icon-large hint-toggle float_left" style="cursor:pointer"></td>`
+    ele.childNodes[2].addEventListener("click", function () {
         removeBuilding(ele);
     })
     document.getElementById("autoBuilderTable").appendChild(ele);
+}
+
+/**
+ * Removes the row of the building that should be removed. -3 because there are three other rows in the table
+ * @param {DOM} ele table row of building queue to be removed
+ */
+function removeBuilding(ele) {
+    buildingObject.buildingQueue.splice(ele.rowIndex - 3, 1);
+    let setLocalStorage = JSON.parse(localStorage.buildingObject);
+    setLocalStorage[game_data.village.id] = buildingObject;
+    localStorage.buildingObject = JSON.stringify(setLocalStorage);
+    ele.remove();
 }
 
 function buildBuilding(building) {
@@ -181,8 +213,7 @@ function buildBuilding(building) {
         "source": game_data.village.id
     };
     let url = "/game.php?village=" + game_data.village.id + "&screen=main&ajaxaction=upgrade_building&id=" + building + "&type=main&h=" + game_data.csrf + "&client_time=" + Math.floor(Timing.getCurrentServerTime() / 1000);
-    $.post(url, data, function () {
-    })
+    $.post(url, data)
         .done(function (response) {
             response = JSON.parse(response);
             if (response.error) {
@@ -192,27 +223,23 @@ function buildBuilding(building) {
                 UI.SuccessMessage(response.success);
                 console.log(response.success);
                 // TODO: might cause issues because of async
-                buildingQueue.splice(0, 1);
+                buildingObject.buildingQueue.splice(0, 1);
+                let setLocalStorage = JSON.parse(localStorage.buildingObject);
+                setLocalStorage[game_data.village.id] = buildingObject;
+                localStorage.buildingObject = JSON.stringify(setLocalStorage);
                 document.querySelector("#autoBuilderTable > tr").remove();
-                localStorage.buildingQueue = JSON.stringify(buildingQueue);
-                window.location.reload();
+                setTimeout(() => { window.location.reload() }, Math.floor(Math.random() * 50 + 500));
             }
         })
         .fail(function () {
             UI.ErrorMessage("Something bad happened. Please contact FunnyPocketBook#9373");
             console.log("Something bad happened. Please contact FunnyPocketBook#9373");
+        })
+        .always(function () {
+            isBuilding = false;
         });
 }
 
-/**
- * Removes the row of the building that should be removed. -2 because there are two other rows in the table
- * @param {DOM} ele table row of building queue to be removed
- */
-function removeBuilding(ele) {
-    buildingQueue.splice(ele.rowIndex - 3, 1);
-    ele.remove();
-    localStorage.buildingQueue = JSON.stringify(buildingQueue);
-}
 
 function eventListeners() {
     // #region Query
@@ -221,28 +248,36 @@ function eventListeners() {
 
     // Saves query length
     document.getElementById("queueLengthBtn").addEventListener("click", function () {
-        if (!game_data.features.Premium.active) {
-            buildingQueueLength = 2;
-        } else {
-            buildingQueueLength = parseInt(document.getElementById("queueLengthInput").value);
+        let qLength = parseInt(document.getElementById("queueLengthInput").value);
+        if (Number.isNaN(qLength)) {
+            qLength = 2;
         }
-        localStorage.buildingQueueLength = JSON.stringify(buildingQueueLength);
-        if (!game_data.features.Premium.active) {
+        if (!game_data.features.Premium.active && qLength > 2) {
+            buildingObject.buildingQueueLength = 2;
+        } else {
+            buildingObject.buildingQueueLength = qLength;
+        }
+        let setLocalStorage = JSON.parse(localStorage.buildingObject);
+        setLocalStorage[game_data.village.id] = buildingObject;
+        localStorage.buildingObject = JSON.stringify(setLocalStorage);
+        if (!game_data.features.Premium.active && qLength > 2) {
             document.getElementById("queueText").innerHTML = " Premium account not active, queue length set to 2.";
-        } else if (parseInt(buildingQueueLength) > 5) {
-            document.getElementById("queueText").innerHTML = " Queue length set to " + buildingQueueLength + ". There will be additional costs for more than 5 constructions in the queue";
+        } else if (parseInt(buildingObject.buildingQueueLength) > 5) {
+            document.getElementById("queueText").innerHTML = " Queue length set to " + buildingObject.buildingQueueLength + ". There will be additional costs for more than 5 constructions in the queue";
         } else {
-            document.getElementById("queueText").innerHTML = " Queue length set to " + buildingQueueLength;
+            document.getElementById("queueText").innerHTML = " Queue length set to " + buildingObject.buildingQueueLength;
         }
-        document.getElementById("queueLengthInput").value = buildingQueueLength;
+        document.getElementById("queueLengthInput").value = buildingObject.buildingQueueLength;
     });
     // #endregion Query
 
     // #region Building
     document.getElementById("addBuilding").addEventListener("click", function () {
         let b = selection.options[selection.selectedIndex].value;
-        buildingQueue.push(selection.options[selection.selectedIndex].value);
-        localStorage.buildingQueue = JSON.stringify(buildingQueue);
+        buildingObject.buildingQueue.push(selection.options[selection.selectedIndex].value);
+        let setLocalStorage = JSON.parse(localStorage.buildingObject);
+        setLocalStorage[game_data.village.id] = buildingObject;
+        localStorage.buildingObject = JSON.stringify(setLocalStorage);
         addBuilding(b);
     });
     document.getElementById("startBuildingScript").addEventListener("click", function () {
