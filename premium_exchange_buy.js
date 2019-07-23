@@ -2,26 +2,27 @@
 // @name         Premium Exchange - Buy Resources
 // @description  Automatically buy resources up to a predefined amount of resources
 // @author       FunnyPocketBook
-// @version      2.1.2
+// @version      2.2
 // @include      https://*/game.php*screen=market*
 // @namespace    https://greasyfork.org/users/151096
 // ==/UserScript==
 const incoming = "Incoming"; // Change this accordingly to your language. In Portuguese it would be const incoming = "Entrada";
-const timeout = 9000; // Time in ms between transactions. Too low and the game won't allow it
+const timeout = 200; // Time in ms between transactions. Too low and the game won't allow it
 let topUp, price, stack;
 let start = false; // Start script or stop script, default is stop
+let isBuying = false;
 
 createInput();
 
 function createInput() {
     "use strict";
-    const userInputParent = _ID("premium_exchange_form"); // Parent element
+    const userInputParent = document.getElementById("premium_exchange_form"); // Parent element
 
     // Create input for setting how much res should be bought
     const divScript = document.createElement("div");
     divScript.setAttribute("id", "divScript");
     userInputParent.parentNode.insertBefore(divScript, userInputParent);
-    _ID("divScript").innerHTML = "<p>Top up warehouse to: <input id='topUpInput'> " +
+    document.getElementById("divScript").innerHTML = "<p>Top up warehouse to: <input id='topUpInput'> " +
         "<button id='topUpOk' class='btn'>OK</button><span id='topUpText'></span></p><p>Buy when price above: <input id='priceInput'> " +
         "<button id='priceOk' class='btn'>OK</button><span id='priceText'></span></p>" +
         "<p>Buy max this much at once: <input id='stackInput'> <button id='stackOk' class='btn'>OK</button><span id='stackText'></span></p>" +
@@ -30,53 +31,53 @@ function createInput() {
         "name=\"stone\" id=\"stoneCheck\"> Stone <input type=\"checkbox\" name=\"iron\" id=\"ironCheck\"> Iron</p>" +
         "<p><button id='start' class='btn'></button></p>";
     if (!start) {
-        _ID("start").innerHTML = "Start";
+        document.getElementById("start").innerHTML = "Start";
     } else {
-        _ID("start").innerHTML = "Stop";
+        document.getElementById("start").innerHTML = "Stop";
     }
     if (localStorage.topUp) {
-        _ID("topUpInput").value = localStorage.topUp;
+        document.getElementById("topUpInput").value = localStorage.topUp;
         topUp = localStorage.topUp;
     }
     if (localStorage.price) {
-        _ID("priceInput").value = localStorage.price;
+        document.getElementById("priceInput").value = localStorage.price;
         price = localStorage.price;
     }
     if (localStorage.stack) {
-        _ID("stackInput").value = localStorage.stack;
+        document.getElementById("stackInput").value = localStorage.stack;
         stack = localStorage.stack;
     }
 }
 
-_ID("topUpOk").addEventListener("click", function() {
-    topUp = _ID("topUpInput").value;
+document.getElementById("topUpOk").addEventListener("click", function () {
+    topUp = document.getElementById("topUpInput").value;
     localStorage.topUp = topUp;
-    _ID("topUpText").innerHTML = "Top up to " + topUp;
+    document.getElementById("topUpText").innerHTML = "Top up to " + topUp;
 });
-_ID("priceOk").addEventListener("click", function() {
-    price = _ID("priceInput").value;
+document.getElementById("priceOk").addEventListener("click", function () {
+    price = document.getElementById("priceInput").value;
     localStorage.price = price;
-    _ID("priceText").innerHTML = "Buy when price above " + price;
+    document.getElementById("priceText").innerHTML = "Buy when price above " + price;
 });
-_ID("stackOk").addEventListener("click", function() {
-    stack = _ID("stackInput").value;
+document.getElementById("stackOk").addEventListener("click", function () {
+    stack = document.getElementById("stackInput").value;
     localStorage.stack = stack;
-    _ID("stackText").innerHTML = "Buy only " + stack + " resources at once";
+    document.getElementById("stackText").innerHTML = "Buy only " + stack + " resources at once";
 });
-_ID("start").addEventListener("click", function() {
+document.getElementById("start").addEventListener("click", function () {
     if (start) {
         start = false;
-        _ID("start").innerHTML = "Start";
+        document.getElementById("start").innerHTML = "Start";
     } else {
         start = true;
-        _ID("start").innerHTML = "Stop";
+        document.getElementById("start").innerHTML = "Stop";
         buyRes();
     }
 });
 
-_ID("topUpInput").addEventListener("keydown", clickOnKeyPress.bind(this, 13, "#topUpOk"));
-_ID("priceInput").addEventListener("keydown", clickOnKeyPress.bind(this, 13, "#priceOk"));
-_ID("stackInput").addEventListener("keydown", clickOnKeyPress.bind(this, 13, "#stackOk"));
+document.getElementById("topUpInput").addEventListener("keydown", clickOnKeyPress.bind(this, 13, "#topUpOk"));
+document.getElementById("priceInput").addEventListener("keydown", clickOnKeyPress.bind(this, 13, "#priceOk"));
+document.getElementById("stackInput").addEventListener("keydown", clickOnKeyPress.bind(this, 13, "#stackOk"));
 
 /**
  *
@@ -101,16 +102,16 @@ function Resource(wh, price, stock, inc, input) {
  * Get all the info of the resources
  * @type {Resource}
  */
-let wood = new Resource(game_data.village.wood, parseInt(__("#premium_exchange_rate_wood > div:nth-child(1)").innerText), parseInt(__("#premium_exchange_stock_wood").innerText), 0, __("#premium_exchange_buy_wood > div:nth-child(1) > input"));
-let iron = new Resource(game_data.village.iron, parseInt(__("#premium_exchange_rate_iron > div:nth-child(1)").innerText), parseInt(__("#premium_exchange_stock_iron").innerText), 0, __("#premium_exchange_buy_iron > div:nth-child(1) > input"));
-let stone = new Resource(game_data.village.stone, parseInt(__("#premium_exchange_rate_stone > div:nth-child(1)").innerText), parseInt(__("#premium_exchange_stock_stone").innerText), 0, __("#premium_exchange_buy_stone > div:nth-child(1) > input"));
+let wood = new Resource(game_data.village.wood, parseInt(document.querySelector("#premium_exchange_rate_wood > div:nth-child(1)").innerText), parseInt(document.querySelector("#premium_exchange_stock_wood").innerText), 0, document.querySelector("#premium_exchange_buy_wood > div:nth-child(1) > input"));
+let iron = new Resource(game_data.village.iron, parseInt(document.querySelector("#premium_exchange_rate_iron > div:nth-child(1)").innerText), parseInt(document.querySelector("#premium_exchange_stock_iron").innerText), 0, document.querySelector("#premium_exchange_buy_iron > div:nth-child(1) > input"));
+let stone = new Resource(game_data.village.stone, parseInt(document.querySelector("#premium_exchange_rate_stone > div:nth-child(1)").innerText), parseInt(document.querySelector("#premium_exchange_stock_stone").innerText), 0, document.querySelector("#premium_exchange_buy_stone > div:nth-child(1) > input"));
 let warehouse = game_data.village.storage_max;
 
 
 if (start) {
     buyRes();
 }
-const interval = setInterval(function() {
+const interval = setInterval(function () {
     if (start && (!document.querySelector("#fader") || document.querySelector("#fader").style.display === "none")) {
         buyRes();
     }
@@ -118,9 +119,10 @@ const interval = setInterval(function() {
 
 function buyRes() {
     getRes();
+
     // If buy everything is checked and warehouse + incoming resource of each resource is less than what the warehouse should be topped up to
-    if (__("#buyStock").checked || wood.wh + wood.inc < topUp || stone.wh + stone.inc < topUp || iron.wh + iron.inc < topUp) {
-        if ((__("#buyStock").checked && __("#woodCheck").checked || wood.price > price && wood.wh + wood.inc < topUp && __("#woodCheck").checked) && wood.stock > price) {
+    if (document.querySelector("#buyStock").checked || wood.wh + wood.inc < topUp || stone.wh + stone.inc < topUp || iron.wh + iron.inc < topUp) {
+        if ((document.querySelector("#buyStock").checked && document.querySelector("#woodCheck").checked || wood.price > price && wood.wh + wood.inc < topUp && document.querySelector("#woodCheck").checked) && wood.stock > price) {
             // Buy wood
             wood.buy = topUp - wood.wh - wood.inc;
             // If for some reason, which shouldn't occur, the amount to buy goes below 0, adjust the amount to buy
@@ -128,93 +130,123 @@ function buyRes() {
                 wood.buy = wood.price - 2;
             }
             // Only buy a certain amount of resources (stack) at once so the price can be still seen
-            if(wood.buy > stack) {
+            if (wood.buy > stack) {
                 wood.buy = stack;
             }
-            if(wood.buy > wood.stock || __("#buyStock").checked && wood.stock > 0) {
+            if (wood.buy > wood.stock || document.querySelector("#buyStock").checked && wood.stock > 0) {
                 wood.buy = wood.stock - 1;
             }
-            stone.inputBuy.value = "";
-            iron.inputBuy.value = "";
+            //stone.inputBuy.value = "";
+            //iron.inputBuy.value = "";
             //wood.buy = setZeroIfNaN(wood.buy);
-            if(wood.buy === 0) {
+            if (wood.buy === 0) {
                 clearInterval(interval);
                 console.log("wood:");
                 console.log(wood);
                 alert("This error message shouldn't pop up. Please open the console with CTRL+Shift+J and send a message to the developer via Discord, FunnyPocketBook#9373");
                 return;
             }
-            wood.inputBuy.value = wood.buy;
-            clickBuy();
-        } else if (((__("#buyStock").checked && __("#stoneCheck").checked) || (stone.price > price && stone.wh + stone.inc < topUp && __("#stoneCheck").checked) && stone.stock > price)) {
+            //wood.inputBuy.value = wood.buy;
+            if (!isBuying) {
+                buy("wood", wood.buy);
+            }
+        } else if (((document.querySelector("#buyStock").checked && document.querySelector("#stoneCheck").checked) || (stone.price > price && stone.wh + stone.inc < topUp && document.querySelector("#stoneCheck").checked) && stone.stock > price)) {
             // Buy stone
             stone.buy = topUp - stone.wh - stone.inc;
             if (stone.buy <= 0) {
                 stone.buy = stone.price - 2;
             }
-            if(stone.buy > stack) {
+            if (stone.buy > stack) {
                 stone.buy = stack;
             }
-            if(stone.buy > stone.stock || __("#buyStock").checked && stone.stock > 0) {
+            if (stone.buy > stone.stock || document.querySelector("#buyStock").checked && stone.stock > 0) {
                 stone.buy = stone.stock - 1;
             }
-            wood.inputBuy.value = "";
-            iron.inputBuy.value = "";
+            //wood.inputBuy.value = "";
+            //iron.inputBuy.value = "";
             //stone.buy = setZeroIfNaN(stone.buy);
-            if(stone.buy === 0) {
+            if (stone.buy === 0) {
                 clearInterval(interval);
                 console.log("stone:");
                 console.log(stone);
                 alert("This error message shouldn't pop up. Please open the console with CTRL+Shift+J and send a message to the developer via Discord, FunnyPocketBook#9373");
                 return;
             }
-            stone.inputBuy.value = stone.buy;
-            clickBuy();
-        } else if ((__("#buyStock").checked && __("#ironCheck").checked || iron.price > price && iron.wh + iron.inc < topUp && __("#ironCheck").checked) && iron.stock > price) {
+            //stone.inputBuy.value = stone.buy;
+            if (!isBuying) {
+                buy("stone", stone.buy);
+            }
+        } else if ((document.querySelector("#buyStock").checked && document.querySelector("#ironCheck").checked || iron.price > price && iron.wh + iron.inc < topUp && document.querySelector("#ironCheck").checked) && iron.stock > price) {
             // Buy iron
             iron.buy = topUp - iron.wh - iron.inc;
             if (iron.buy <= 0) {
                 iron.buy = iron.price - 2;
             }
-            if(iron.buy > stack) {
+            if (iron.buy > stack) {
                 iron.buy = stack;
             }
-            if(iron.buy > iron.stock || __("#buyStock").checked && iron.stock > 0) {
+            if (iron.buy > iron.stock || document.querySelector("#buyStock").checked && iron.stock > 0) {
                 iron.buy = iron.stock - 1;
             }
-            wood.inputBuy.value = "";
-            stone.inputBuy.value = "";
+            //wood.inputBuy.value = "";
+            //stone.inputBuy.value = "";
             //iron.buy = setZeroIfNaN(iron.buy);
-            if(iron.buy === 0) {
+            if (iron.buy === 0) {
                 clearInterval(interval);
                 console.log("iron:");
                 console.log(iron);
                 alert("This error message shouldn't pop up. Please open the console with CTRL+Shift+J and send a message to the developer via Discord, FunnyPocketBook#9373");
                 return;
             }
-            iron.inputBuy.value = iron.buy;
-            clickBuy();
+            //iron.inputBuy.value = iron.buy;
+            if (!isBuying) {
+                buy("iron", iron.buy);
+            }
         }
     }
 }
 
 function clickBuy() {
-    __("#premium_exchange_form > input").click();
-    setTimeout(function() {
+    document.querySelector("#premium_exchange_form > input").click();
+    setTimeout(function () {
         try {
-            __("#premium_exchange > div > div > div.confirmation-buttons > button.btn.evt-confirm-btn.btn-confirm-yes").click();
+            document.querySelector("#premium_exchange > div > div > div.confirmation-buttons > button.btn.evt-confirm-btn.btn-confirm-yes").click();
         } catch (e) {
-            __("btn evt-cancel-btn btn-confirm-no").click();
+            document.querySelector("btn evt-cancel-btn btn-confirm-no").click();
         }
     }, 1000);
 }
 
-function _ID(selector) {
-    return document.getElementById(selector);
-}
-
-function __(selector) {
-    return document.querySelector(selector);
+function buy(res, amnt) {
+    isBuying = true;
+    let exchangeBeginUrl = window.location.origin + "/game.php?village=" + game_data.village.id + "&screen=market&ajaxaction=exchange_begin";
+    let data = {};
+    data["buy_" + res] = amnt;
+    data.h = game_data.csrf;
+    $.post(exchangeBeginUrl, data, (r) => {
+        r = JSON.parse(r);
+        if (r.error) {
+            isBuying = false;
+            return;
+        }
+        let rate_hash = r[0].rate_hash;
+        let buy_amnt = r[0].amount;
+        let exchangeConfirmUrl = window.location.origin + "/game.php?village=" + game_data.village.id + "&screen=market&ajaxaction=exchange_confirm";
+        data["rate_" + res] = rate_hash;
+        data["buy_" + res] = buy_amnt;
+        data["mb"] = 1;
+        data.h = game_data.csrf;
+        $.post(exchangeConfirmUrl, data, (r) => {
+            isBuying = false;
+            r = JSON.parse(r);
+            if (r.success) {
+                UI.SuccessMessage("Bought " + buy_amnt + " " + res + "!");
+                console.log("Bought " + buy_amnt + " " + res + "!");
+                $("#market_status_bar").replaceWith(r.data.status_bar);
+                getRes();
+            }
+        })
+    })
 }
 
 /**
@@ -226,32 +258,32 @@ function getRes() {
     wood.wh = game_data.village.wood;
     stone.wh = game_data.village.stone;
     iron.wh = game_data.village.iron;
-    wood.stock = parseInt(__("#premium_exchange_stock_wood").innerText);
-    iron.stock = parseInt(__("#premium_exchange_stock_iron").innerText);
-    stone.stock = parseInt(__("#premium_exchange_stock_stone").innerText);
-    wood.price = parseInt(__("#premium_exchange_rate_wood > div:nth-child(1)").innerText);
-    stone.price = parseInt(__("#premium_exchange_rate_stone > div:nth-child(1)").innerText);
-    iron.price = parseInt(__("#premium_exchange_rate_iron > div:nth-child(1)").innerText);
+    wood.stock = parseInt(document.getElementById("premium_exchange_stock_wood"));
+    stone.stock = parseInt(document.getElementById("premium_exchange_stock_stone"));
+    iron.stock = parseInt(document.getElementById("premium_exchange_stock_iron"));
+    wood.price = parseInt(document.querySelector("#premium_exchange_rate_wood > div:nth-child(1)").innerText);
+    stone.price = parseInt(document.querySelector("#premium_exchange_rate_stone > div:nth-child(1)").innerText);
+    iron.price = parseInt(document.querySelector("#premium_exchange_rate_iron > div:nth-child(1)").innerText);
     try {
-        if (__("#market_status_bar > table:nth-child(2) > tbody > tr > th:nth-child(1)").innerHTML.split(" ")[0].replace(":", "") === incoming) {
-            parentInc = __("#market_status_bar > table:nth-child(2) > tbody > tr > th:nth-child(1)");
+        if (document.querySelector("#market_status_bar > table:nth-child(2) > tbody > tr > th:nth-child(1)").innerHTML.split(" ")[0].replace(":", "") === incoming) {
+            parentInc = document.querySelector("#market_status_bar > table:nth-child(2) > tbody > tr > th:nth-child(1)");
         }
-    } catch(e) {}
+    } catch (e) { }
     try {
-        if (__("#market_status_bar > table:nth-child(2) > tbody > tr > th:nth-child(2)").innerHTML.split(" ")[0].replace(":", "") === incoming) {
-            parentInc = __("#market_status_bar > table:nth-child(2) > tbody > tr > th:nth-child(2)");
+        if (document.querySelector("#market_status_bar > table:nth-child(2) > tbody > tr > th:nth-child(2)").innerHTML.split(" ")[0].replace(":", "") === incoming) {
+            parentInc = document.querySelector("#market_status_bar > table:nth-child(2) > tbody > tr > th:nth-child(2)");
         }
-    } catch(e) {}
+    } catch (e) { }
 
     try {
         wood.inc = parseInt(setZeroIfNaN(parseInt(parentInc.querySelector(".wood").parentElement.innerText.replace(".", ""))));
-    } catch (e) {}
+    } catch (e) { }
     try {
         stone.inc = parseInt(setZeroIfNaN(parseInt(parentInc.querySelector(".stone").parentElement.innerText.replace(".", ""))));
-    } catch (e) {}
+    } catch (e) { }
     try {
         iron.inc = parseInt(setZeroIfNaN(parseInt(parentInc.querySelector(".iron").parentElement.innerText.replace(".", ""))));
-    } catch (e) {}
+    } catch (e) { }
 }
 
 function clickOnKeyPress(key, selector) {
