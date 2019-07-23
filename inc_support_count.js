@@ -2,7 +2,7 @@
 // @name Show total incoming troops in village info
 // @description Shows the total incoming troops (support and attack) in the village info screen
 // @author FunnyPocketBook
-// @version 0.4.2
+// @version 0.4.3
 // @date 2019-07-02
 // @namespace FunnyPocketBook
 // @include https://*/game.php?village=*&screen=info_village*
