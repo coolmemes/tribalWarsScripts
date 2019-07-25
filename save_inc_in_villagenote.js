@@ -2,7 +2,7 @@
 // @name Save inc in village notes
 // @description Writes incoming attacks into village notes
 // @author FunnyPocketBook
-// @version 0.2.1
+// @version 0.2.2
 // @namespace FunnyPocketBook
 // @include https://*/game.php?*
 // ==/UserScript==
@@ -43,14 +43,19 @@ function getAttackInfo(r) {
 
 function writeNote(text) {
     let villageNote = "";
-    text.forEach((t) => {
-        villageNote += t.join(", ") + "\n";
+    $.get(window.location.origin + "/game.php?village=" + game_data.village.id + "&screen=overview&ajax=edit_notes_popup", function (r) {
+        villageNote = (new DOMParser()).parseFromString(r, "text/html").querySelector("#message").textContent + "\n";
     })
-    let noteUrl = window.location.origin + "/game.php?village=" + game_data.village.id + "&screen=api&ajaxaction=village_note_edit";
-    let data = {
-        village_id: game_data.village.id,
-        note: villageNote,
-        h: game_data.csrf
-    };
-    $.post(noteUrl, data);
+    .done(function () {
+        text.forEach((t) => {
+            villageNote += t.join(", ") + "\n";
+        })
+        let noteUrl = window.location.origin + "/game.php?village=" + game_data.village.id + "&screen=api&ajaxaction=village_note_edit";
+        let data = {
+            village_id: game_data.village.id,
+            note: villageNote,
+            h: game_data.csrf
+        };
+        $.post(noteUrl, data);
+    })
 }
