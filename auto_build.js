@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Auto Builder
-// @version      0.4
+// @version      0.5
 // @description  Adds buildings to queue automatically
 // @author       FunnyPocketBook
 // @match        https://*/game.php?village=*&screen=main*
@@ -19,6 +19,7 @@ let selection;
 let buildingQueueCounter = 0;
 let scriptStatus = false; // false == script not running, true == script running
 let isBuilding = false; // Prevents sending multiple orders of the same building. false == building can be built
+let main, barracks, stable, garage, watchtower, smith, place, statue, market, timber, stone, iron, farm, warehouse, hide, wall;
 
 class BQueue {
     constructor(bQueue, bQueueLength) {
@@ -62,28 +63,30 @@ class BQueue {
 init();
 
 function init() {
+    getWorldData();
     const putEleAfter = document.querySelector("#content_value > table:nth-child(2)");
     let newDiv = document.createElement("div");
-    const selectBuildingHtml = '<td><select id="selectBuildingHtml"> ' +
-        '<option value="main">Headquarters</option> ' +
-        '<option value="barracks">Barracks</option> ' +
-        '<option value="stable">Stable</option> ' +
-        '<option value="garage">Workshop</option> ' +
-        '<option value="watchtower">Watchtower</option> ' +
-        '<option value="smith">Smithy</option> ' +
-        '<option value="market">Market</option> ' +
-        '<option value="wood">Timber Camp</option> ' +
-        '<option value="stone">Clay Pit</option> ' +
-        '<option value="iron">Iron Mine</option> ' +
-        '<option value="farm">Farm</option> ' +
-        '<option value="storage">Warehouse</option> ' +
-        '<option value="hide">Hiding Place</option> ' +
-        '<option value="wall">Wall</option> ' +
-        '</select></td>';
+    const selectBuildingHtml = `<td><select id="selectBuildingHtml">
+        <option value="main">${main}</option>
+        <option value="barracks">${barracks}</option>
+        <option value="stable">${stable}</option>
+        <option value="garage">${garage}</option>
+        ${watchtower ? '<option value="watchtower">' + watchtower + '</option>' : ''}
+        <option value="smith">${smith}</option>
+        <option value="place">${place}</option>
+        <option value="statue">${statue}</option>
+        <option value="market">${market}</option>
+        <option value="wood">${wood}</option>
+        <option value="stone">${stone}</option>
+        <option value="iron">${iron}</option>
+        <option value="farm">${farm}</option>
+        <option value="storage">${storage}</option>
+        <option value="hide">${hide}</option>
+        <option value="wall">${wall}</option>
+        </select></td>`;
+
+
     let newTable = `<table id="autoBuilderTable">
-        <tr>
-            <td><button id="startBuildingScript" class="btn">Start</button></td>
-        </tr>
         <tr>
             <td>Queue length:</td>
             <td><input id='queueLengthInput' style='width:30px'></td>
@@ -95,7 +98,10 @@ function init() {
             ${selectBuildingHtml}
             <td><button id='addBuilding' class='btn'>Add</button></td>
         </tr>
-        </table>`
+        <tr>
+            <td><button id="startBuildingScript" class="btn">Start</button></td>
+        </tr>
+        </table>`;
 
     newDiv.innerHTML = newTable;
     putEleAfter.parentNode.insertBefore(newDiv, putEleAfter.nextSibling);
@@ -143,6 +149,28 @@ function init() {
     }
 }
 
+function getWorldData() {
+    main = BuildingMain.buildings.main.name;
+    barracks = BuildingMain.buildings.barracks.name;
+    stable = BuildingMain.buildings.stable.name;
+    garage = BuildingMain.buildings.garage.name;
+    smith = BuildingMain.buildings.smith.name;
+    place = BuildingMain.buildings.place.name;
+    statue = BuildingMain.buildings.statue.name;
+    market = BuildingMain.buildings.market.name;
+    wood = BuildingMain.buildings.wood.name;
+    stone = BuildingMain.buildings.stone.name;
+    iron = BuildingMain.buildings.iron.name;
+    farm = BuildingMain.buildings.farm.name;
+    storage = BuildingMain.buildings.storage.name;
+    hide = BuildingMain.buildings.hide.name;
+    wall = BuildingMain.buildings.wall.name;
+
+    if (BuildingMain.buildings.watchtower) {
+        watchtower = BuildingMain.buildings.watchtower.name;
+    }
+}
+
 
 function startScript() {
     let currentBuildLength = 0;
@@ -185,7 +213,7 @@ function startScript() {
 
 function addBuilding(building) {
     let ele = document.createElement("tr");
-    ele.innerHTML = `<td>${building}</td>
+    ele.innerHTML = `<td>${parseBuilding(building)}</td>
     <td class="delete-icon-large hint-toggle float_left" style="cursor:pointer"></td>`
     ele.childNodes[2].addEventListener("click", function () {
         removeBuilding(ele);
@@ -238,6 +266,45 @@ function buildBuilding(building) {
         .always(function () {
             isBuilding = false;
         });
+}
+
+function parseBuilding(b) {
+    switch (b) {
+        case "main":
+            return main;
+        case "barracks":
+            return barracks;
+        case "stable":
+            return stable;
+        case "garage":
+            return garage;
+        case "watchtower":
+            return watchtower;
+        case "smith":
+            return smith;
+        case "place":
+            return place;
+        case "statue":
+            return statue;
+        case "market":
+            return market;
+        case "wood":
+            return wood;
+        case "stone":
+            return stone;
+        case "iron":
+            return iron;
+        case "farm":
+            return farm;
+        case "storage":
+            return storage;
+        case "hide":
+            return hide;
+        case "wall":
+            return wall;
+        default:
+            return b;
+    }
 }
 
 
