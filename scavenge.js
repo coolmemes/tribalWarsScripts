@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Zbieractwo
+// @name         Auto Scavenge
 // @version      0.1
 // @author       FancyDevs
 // @include      https://*/game.php?village=*&screen=place&mode=*
