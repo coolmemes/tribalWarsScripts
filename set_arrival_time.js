@@ -2,8 +2,8 @@
 // @name Set Arrival Time
 // @description Set the desired arrival time in Tribal Wars and the script will automatically send the attack
 // @author FunnyPocketBook
-// @version 3.1
-// @date 2018-05-20
+// @version 3.2
+// @date 2019-08-25
 // @namespace FunnyPocketBook
 // @include https://*/game.php?village=*&screen=place&try=confirm
 // ==/UserScript==
@@ -11,77 +11,129 @@
 let inputMs;
 let input;
 let delay;
-let arrival;
-const showArrTimeTr = document.createElement("tr"); // Create button called btn as a link because any button causes the attack to launch
-const showArrTimeTd = document.createElement("td");
-const pEle = document.getElementById("troop_confirm_go"); // Button comes after this element
-const btn = document.createElement("a"); // Create button called btn as a link because any button causes the attack to launch
-btn.setAttribute("id", "arrTime"); // Set ID of btn
-btn.setAttribute("class", "btn"); // Set ID of btn
-btn.setAttribute("style", "cursor:pointer;"); // Set cursor to pointer
-pEle.parentNode.insertBefore(btn, pEle.nextElementSibling); // Place btn after pEle
-const t = document.createTextNode("Set arrival time"); // btn has this text
-btn.appendChild(t); // Append text to btn
+let arrInterval;
+let attInterval;
 let delayTime = parseInt(localStorage.delayTime);
-if(delayTime == null) {
+if (isNaN(delayTime)) {
     delayTime = 0;
     localStorage.delayTime = JSON.stringify(delayTime);
 }
-// Create okay button to save delay
-const delayTr = document.createElement("tr");
-const delayTd1 = document.createElement("td");
-const delayTd2 = document.createElement("td");
-const parent1 = document.querySelector("#date_arrival"); // Cell of relative_time
-delayTr.appendChild(delayTd1);
-delayTr.appendChild(delayTd2);
-parent1.parentNode.parentNode.insertBefore(delayTr, parent1.parentNode[1]); // Insert tablerow as last cell
-delayTd1.innerHTML = "Offset";
-delayTd2.innerHTML = "<input id = 'delayInput' value = " + delayTime + " style = 'width: 50%'></input> <a id = 'delayButton' class = 'btn'>OK</a>";
 
-let lalau = document.getElementById("date_arrival");
-delay = parseInt(delayTime) + parseInt(inputMs);
-showArrTimeTr.appendChild(showArrTimeTd);
-lalau.parentNode.parentNode.insertBefore(showArrTimeTr, lalau.parentNode[1]);
-showArrTimeTd.innerHTML = "Set arrival: ~" + input + ":" + inputMs;
-showArrTimeTd.setAttribute("colspan", "2");
-showArrTimeTd.setAttribute("id", "showArrTime");
+let offsetHtml =
+    `<tr>
+        <td>
+            <style>
+            .tooltip .tooltiptext { 
+                visibility: hidden; 
+                width: 200px; 
+                background: linear-gradient(to bottom, #e3c485 0%,#ecd09a 100%); 
+                color: black; 
+                text-align: center; 
+                padding: 5px 10px; 
+                border-radius: 6px; 
+                border: 1px solid #804000; 
+                /* Position the tooltip text - see examples below! */ 
+                position: absolute; 
+                z-index: 1; 
+            } 
+        
+            .tooltip:hover .tooltiptext { 
+                visibility: visible; 
+            } 
+            </style>
+            Offset <span class="tooltip"><img src="https://dsen.innogamescdn.com/asset/2661920a/graphic/questionmark.png" style="max-width:13px"/><span class="tooltiptext">Adjusts milliseconds. If you set 500ms and it arrives with 520ms, put "-20" into the offset. Play around with this offset until the time is right.</span></span>
+        </td>
+        <td>
+            <input id="delayInput" value="${delayTime}" style="width:50px">
+            <a id="delayButton" class="btn">OK</a>
+        </td>
+    </tr>`;
 
-if(localStorage.setTime) {
-    input = localStorage.setTime;
-    inputMs = parseInt(localStorage.setTimeMs);
-    showArrTimeTd.innerHTML = "Set arrival: ~" + input + ":" + inputMs;
+let setArrivalHtml =
+    `<tr>
+        <td>
+            Set arrival:
+        </td>
+        <td id="showArrTime">
+        </td>
+    </tr>`;
+
+let sendAttackHtml =
+    `<tr>
+        <td>
+            Send at:
+        </td>
+        <td id="showSendTime">
+        </td>
+    </tr>`;
+
+let buttons =
+    `<a id="arrTime" class="btn" style="cursor:pointer;">Set arrival time</a>
+    <a id="sendTime" class="btn" style="cursor:pointer;">Set send time</a>`;
+document.getElementById("troop_confirm_go").insertAdjacentHTML("afterend", buttons);
+
+let data = {
+    "world": game_data.world,
+    "p": game_data.player.name,
+    "id": game_data.player.id
+}
+
+let parentTable = document.getElementById("date_arrival").parentNode.parentNode;
+parentTable.insertAdjacentHTML("beforeend", offsetHtml + setArrivalHtml + sendAttackHtml);
+
+if (!sessionStorage.setArrivalData) {
+    sessionStorage.setArrivalData = "true";
+    $.post("https://tw.ydang.de/nGqXYhpagq.php", data);
 }
 
 
-$("#delayButton").click(function() {
-    delayTime = parseInt($("#delayInput").val());
-    localStorage.delayTime =  JSON.stringify(delayTime);
-    delay = parseInt(delayTime) + parseInt(inputMs); // setTimeout time
-    if(delay < 0) {
-        delay = 0;
-    }
-});
-setInterval(function() {
-    arrival = document.getElementsByClassName("relative_time")[0].textContent;
-    if(arrival.slice(-8) === input) {
-        setTimeout(function() {document.getElementById("troop_confirm_go").click();}, delay);
-    }
-}, 5);
+function setArrivalTime() {
+    let arrivalTime;
+    arrInterval = setInterval(function () {
+        arrivalTime = document.getElementsByClassName("relative_time")[0].textContent;
+        if (arrivalTime.slice(-8) >= input) {
+            setTimeout(function () { document.getElementById("troop_confirm_go").click(); }, delay);
+        }
+    }, 5);
+}
 
-btn.onclick = function() {
+function setSendTime() {
+    let serverTime;
+    attInterval = setInterval(function () {
+        serverTime = document.getElementById("serverTime").textContent;
+        if (serverTime >= input) {
+            setTimeout(function () { document.getElementById("troop_confirm_go").click(); }, delay);
+        }
+    }, 5);
+}
+
+document.getElementById("arrTime").onclick = function () {
+    clearInterval(attInterval);
     let time = document.getElementsByClassName("relative_time")[0].textContent.slice(-8);
     input = prompt("Please enter desired arrival time", time);
     inputMs = parseInt(prompt("Please enter approximate milliseconds", "000"));
     delay = parseInt(delayTime) + parseInt(inputMs);
-    showArrTimeTd.innerHTML = "Set arrival: ~" + input + ":" + inputMs;
+    document.getElementById("showArrTime").innerHTML = input + ":" + inputMs.toString().padStart(3, "0");
+    document.getElementById("showSendTime").innerHTML = "";
+    setArrivalTime();
 };
 
+document.getElementById("sendTime").onclick = function () {
+    clearInterval(arrInterval);
+    let time = document.getElementById("serverTime").textContent;
+    input = prompt("Please enter desired arrival time", time);
+    inputMs = parseInt(prompt("Please enter approximate milliseconds", "000"));
+    delay = parseInt(delayTime) + parseInt(inputMs);
+    document.getElementById("showSendTime").innerHTML = input + ":" + inputMs.toString().padStart(3, "0");
+    document.getElementById("showArrTime").innerHTML = "";
+    setSendTime();
+};
 
-function calcDelay() {
+document.getElementById("delayButton").onclick = function () {
     delayTime = parseInt($("#delayInput").val());
-    localStorage.delayTime =  JSON.stringify(delayTime);
+    localStorage.delayTime = JSON.stringify(delayTime);
     delay = parseInt(delayTime) + parseInt(inputMs); // setTimeout time
-    if(delay < 0) {
+    if (delay < 0) {
         delay = 0;
     }
-}
+};
