@@ -11,6 +11,7 @@ const outgoing = "Outgoing";
 const timeout = 9000;
 let leave, priceSell, stackSell;
 let startSell = false;
+let isBuying = false;
 
 createInput();
 
@@ -152,6 +153,38 @@ function clickBuy() {
     setTimeout(function() {
         //__("#premium_exchange > div > div > div.confirmation-buttons > button.btn.evt-confirm-btn.btn-confirm-yes").click();
     }, 1000);
+}
+
+function buy(res, amnt) {
+    isBuying = true; // Making sure that it only starts the buying process once
+    let exchangeBeginUrl = window.location.origin + "/game.php?village=" + game_data.village.id + "&screen=market&ajaxaction=exchange_begin";
+    let data = {};
+    data["buy_" + res] = amnt;
+    data.h = game_data.csrf;
+    $.post(exchangeBeginUrl, data, (r) => {
+        r = JSON.parse(r);
+        if (r.error) {
+            isBuying = false;
+            return;
+        }
+        let rate_hash = r[0].rate_hash;
+        let buy_amnt = r[0].amount;
+        let exchangeConfirmUrl = window.location.origin + "/game.php?village=" + game_data.village.id + "&screen=market&ajaxaction=exchange_confirm";
+        data["rate_" + res] = rate_hash;
+        data["buy_" + res] = buy_amnt;
+        data["mb"] = 1;
+        data.h = game_data.csrf;
+        $.post(exchangeConfirmUrl, data, (r) => {
+            isBuying = false;
+            r = JSON.parse(r);
+            if (r.success) {
+                UI.SuccessMessage("Bought " + buy_amnt + " " + res + "!");
+                console.log("Bought " + buy_amnt + " " + res + "!");
+                $("#market_status_bar").replaceWith(r.data.status_bar);
+                getRes();
+            }
+        })
+    })
 }
 
 function _ID(selector) {

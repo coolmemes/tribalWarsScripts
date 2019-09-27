@@ -2,7 +2,7 @@
 // @name         Premium Exchange - Buy Resources
 // @description  Automatically buy resources up to a predefined amount of resources
 // @author       FunnyPocketBook
-// @version      2.2
+// @version      2.3
 // @include      https://*/game.php*screen=market*
 // @namespace    https://greasyfork.org/users/151096
 // ==/UserScript==
@@ -206,39 +206,27 @@ function buyRes() {
     }
 }
 
-function clickBuy() {
-    document.querySelector("#premium_exchange_form > input").click();
-    setTimeout(function () {
-        try {
-            document.querySelector("#premium_exchange > div > div > div.confirmation-buttons > button.btn.evt-confirm-btn.btn-confirm-yes").click();
-        } catch (e) {
-            document.querySelector("btn evt-cancel-btn btn-confirm-no").click();
-        }
-    }, 1000);
-}
-
 function buy(res, amnt) {
     isBuying = true;
-    let exchangeBeginUrl = window.location.origin + "/game.php?village=" + game_data.village.id + "&screen=market&ajaxaction=exchange_begin";
     let data = {};
     data["buy_" + res] = amnt;
     data.h = game_data.csrf;
-    $.post(exchangeBeginUrl, data, (r) => {
-        r = JSON.parse(r);
-        if (r.error) {
+    TribalWars.post("market", {ajaxaction: "exchange_begin"}, data, function(r) {
+        if (r[0].error) {
             isBuying = false;
             return;
         }
         let rate_hash = r[0].rate_hash;
         let buy_amnt = r[0].amount;
-        let exchangeConfirmUrl = window.location.origin + "/game.php?village=" + game_data.village.id + "&screen=market&ajaxaction=exchange_confirm";
         data["rate_" + res] = rate_hash;
         data["buy_" + res] = buy_amnt;
         data["mb"] = 1;
         data.h = game_data.csrf;
-        $.post(exchangeConfirmUrl, data, (r) => {
+        TribalWars._ah = {
+            TribalWarsTE: 1,
+        }
+        TribalWars.post("market", {ajaxaction: "exchange_confirm"}, data, function(r) {
             isBuying = false;
-            r = JSON.parse(r);
             if (r.success) {
                 UI.SuccessMessage("Bought " + buy_amnt + " " + res + "!");
                 console.log("Bought " + buy_amnt + " " + res + "!");
@@ -248,7 +236,6 @@ function buy(res, amnt) {
         })
     })
 }
-
 /**
  * Update resource objects
  */
@@ -258,9 +245,9 @@ function getRes() {
     wood.wh = game_data.village.wood;
     stone.wh = game_data.village.stone;
     iron.wh = game_data.village.iron;
-    wood.stock = parseInt(document.getElementById("premium_exchange_stock_wood"));
-    stone.stock = parseInt(document.getElementById("premium_exchange_stock_stone"));
-    iron.stock = parseInt(document.getElementById("premium_exchange_stock_iron"));
+    wood.stock = parseInt(document.getElementById("premium_exchange_stock_wood").innerText);
+    stone.stock = parseInt(document.getElementById("premium_exchange_stock_stone").innerText);
+    iron.stock = parseInt(document.getElementById("premium_exchange_stock_iron").innerText);
     wood.price = parseInt(document.querySelector("#premium_exchange_rate_wood > div:nth-child(1)").innerText);
     stone.price = parseInt(document.querySelector("#premium_exchange_rate_stone > div:nth-child(1)").innerText);
     iron.price = parseInt(document.querySelector("#premium_exchange_rate_iron > div:nth-child(1)").innerText);
