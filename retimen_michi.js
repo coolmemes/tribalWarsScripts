@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Set Arrival Time
-// @description Set the desired arrival time in Tribal Wars and the script will automatically send the attack
+// @description Set the desired arrival time in Tribal Wars and the script will automatically send attack
 // @author FunnyPocketBook
 // @version 1.16.2
 // @date 03-10-2017
