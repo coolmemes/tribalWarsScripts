@@ -23,6 +23,9 @@ function main() {
     getConfigUnits();
     getTotalUnits(villageID);
 }
+/**
+* Store village information
+*/
 class VillageObj {
     constructor(units, maxUnits, resources) {
         this.id = villageID;
