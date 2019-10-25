@@ -1,4 +1,4 @@
-- Download Tampermonkey https://tampermonkey.net/ or any other userscript extension
+- Download Tampermonkey https://tampermonkey.net/
 
 - Download Script https://greasyfork.org/en/scripts/32749-set-arrival-time
 
